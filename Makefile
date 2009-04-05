@@ -5,6 +5,8 @@ include build-config.mk
 all: showpath
 doc: showpath.pdf
 
+showpath: showpath.o path_list.o
+
 showpath.ps: showpath.1
 	groff -Tps -mdoc $< > $@
 showpath.pdf: showpath.ps

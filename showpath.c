@@ -4,110 +4,64 @@
 
 #include <unistd.h>	/*for getopt*/
 
-/* ugly globals */
-char **entries = NULL;
-size_t num = 0;
-size_t max = 0;
+#include "showpath.h"
 
 /* stores argv[0] for use in output */
 static char *myname;
 
-/* Takes a char**, the number of elements in the buffer,
- * and the current buffer maxsize, and grows if necessary.
- */
-char **grow(char **entries, size_t num, size_t *max)
+static struct config
 {
-	if(num >= *max)
-	{
-		void *t;
-		*max = 2*(*max+1);
-		t=realloc(entries,*max*sizeof *entries);
-		if(!t)
-		{
-			perror("realloc");
-			exit(EXIT_FAILURE);
-		}
-		entries=t;
-	}
-	return entries;
+	char *envname;
+	char pathsep;
+} config;
+
+static void set_defaults(void)
+{
+	config.envname="PATH";
+	config.pathsep=':';
 }
 
-/* Appends new to the global list of entries if it is 
- * not already in the list.
- * Grows the buffer if necessary.
- */
-int add_entry(const char *new)
-{
-	size_t i;
-
-	for(i=0;i<num;i++)
-		if(strcmp(entries[i],new)==0)
-			return 0;
-
-	entries = grow(entries, num, &max);
-	entries[num]=strdup(new);
-	if(!entries[num])
-	{
-		perror("strdup");
-		exit(EXIT_FAILURE);
-	}
-	num++;
-	return 0;
-}
-
-/* Parse values out of a string and add them to entries.
- */
-int add_list(const char *list,char sep)
-{
-	char *p=strdup(list);
-	char *q;
-	char seperator[2];
-
-	seperator[0]=sep;
-	seperator[1]='\0';
-
-	if(!p)
-	{
-		perror("strdup");
-		return -1;
-	}
-	q=strtok(p,seperator);
-	while(q)
-	{
-		int ret=add_entry(q);
-		if(ret)
-			return ret;
-		q=strtok(NULL,seperator);
-	}
-
-	free(p);
-
-	return 0;
-}
-
-/* Look up an environment variable and add its contents to
- * entries.
- */
-int add_from_env(char* env_var, char sep)
+/*Look up an environment variable and add its contents to the list
+    of path entries in pl.
+*/
+int add_from_env(struct path_list *pl, char* env_var, char sep)
 {
 	const char *p=getenv(env_var);
 
 	if(!p)
 	{
-		/*This isn't actually an error, it just means we have
-		    an empty expansion for %current.
-		  So silently continue with anything else we want to throw in.
+		/*This isn't an error, it just means we have an empty
+		    expansion for %current.
+		  So silently continue with anything else we want to throw
+		    in.
 		*/
 		return 0;
 	}
 
-	return add_list(p,sep);
+	return add_entries(pl,p,sep);
 }
 
-/* Set the global envname based on predefined types.
- * Used for -t switch.
- */
-int set_type(const char *type, char **envname)
+/*Handle magic path entries.
+  Currently only handles '%current'.
+  When we add config file capability, this will be where we look up
+    the path entries for shortnames.
+*/
+int add_magic_entry(struct path_list *pl,const char *name)
+{
+	if(strcmp(name,"%current")!=0)
+	{
+		fprintf(stderr,"%s: Unrecognized magic path entry '%s'\n",myname,name);
+		return -1;
+	}
+
+	return add_from_env(pl,config.envname,config.pathsep);
+}
+
+/*Set the type of path we're building.
+  Used for -t switch.
+  Currently only affects config.envname.
+*/
+int set_type(const char *type)
 {
 	const char *types[]={"exec","man",NULL};
 	char *envs[]={"PATH","MANPATH",NULL};
@@ -116,7 +70,7 @@ int set_type(const char *type, char **envname)
 	{
 		if(strcmp(types[i],type)==0)
 		{
-			*envname=envs[i];
+			config.envname=envs[i];
 			return 0;
 		}
 	}
@@ -144,10 +98,11 @@ int main(int argc,char **argv)
 	int i;
 	int opt;
 	int have_type=0;
-	char *envname="PATH";
-	char sep = ':';
+	struct path_list *pl;
 
 	myname=argv[0];
+
+	set_defaults();
 
 	while((opt=getopt(argc,argv,":t:v:s:"))!=-1)
 	{
@@ -160,7 +115,7 @@ int main(int argc,char **argv)
 				shortusage();
 				return EXIT_FAILURE;
 			}
-			if(set_type(optarg, &envname))
+			if(set_type(optarg))
 			{
 				fprintf(stderr,"%s: Unknown type '%s'!\n",myname,optarg);
 				shortusage();
@@ -175,7 +130,7 @@ int main(int argc,char **argv)
 				shortusage();
 				return EXIT_FAILURE;
 			}
-			envname=optarg;
+			config.envname=optarg;
 			have_type=1;
 			break;
 		case 's':
@@ -185,7 +140,7 @@ int main(int argc,char **argv)
 				shortusage();
 				return EXIT_FAILURE;
 			}
-			sep = optarg[0];
+			config.pathsep = optarg[0];
 			break;
 		case ':':
 			fprintf(stderr,"%s: Option '%c' requires an argument\n",myname,optopt);
@@ -213,32 +168,37 @@ int main(int argc,char **argv)
 		return 0;
 	}
 
+	pl=alloc_entry();
+	if(!pl)
+	{
+		perror("alloc_entry");
+		exit(EXIT_FAILURE);
+	}
+
 	for(i=0;i<argc;i++)
 	{
-		int ret;
-		if(strcmp(argv[i],"%current")==0)
-			ret=add_from_env(envname, sep);
-		else
-			ret=add_list(argv[i],sep);
+		int ret=add_entries(pl,argv[i],config.pathsep);
 		if(ret)
 		{
 			/*XXX This will get ugly if we have a long path
 			    on the command line.  Is there a better way
 			    to handle that?   --DV
 			*/
-			fprintf(stderr,"%s: Adding path entry '%s' failed!\n",argv[0],argv[i]);
+			fprintf(stderr,"%s: Adding path entry '%s' failed!\n",myname,argv[i]);
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	if(num)
+	if(pl->num)
 	{
 		size_t idx;
-		printf("%s",entries[0]);
-		for(idx=1;idx<num;idx++)
-			printf("%c%s",sep,entries[idx]);
+		printf("%s",pl->entries[0]);
+		for(idx=1;idx<pl->num;idx++)
+			printf("%c%s",config.pathsep,pl->entries[idx]);
 		printf("\n");
 	}
+
+	free_entry(pl);
 
 	return 0;
 }
