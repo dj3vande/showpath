@@ -6,7 +6,7 @@
 .Nd manageably edit path
 .Sh SYNOPSIS
 .Nm showpath
-.Op Fl t Ar type | Fl v Ar ENV_NAME
+.Op Fl t Ar type | Fl e Ar ENV_NAME
 .Op Fl s Ar separator
 .Ar path_entry ...
 .Sh DESCRIPTION
@@ -30,6 +30,9 @@ before splitting at separators.
 .Pp
 The following options are available:
 .Bl -tag -width flag
+.It Fl e Ar ENV_NAME
+Specifies an environment variable name to look up for the expansion of
+.Ql %current .
 .It Fl s Ar separator
 Specifies the path separator.
 The separator must be a single character and defaults to
@@ -53,20 +56,17 @@ Currently known types are:
 The
 .Fl t
 option currently only provides a shorthand for an equivalent use of the
-.Fl v
+.Fl e
 option.
 Adding short names for sets of path entries is a feature scheduled
 for implementation in the near future; when this happens, specifying
 a type will also select a set of short names based on the type.
-.It Fl v Ar ENV_NAME
-Specifies an environment variable name to look up for the expansion of
-.Ql %current .
 .El
 .Pp
 The
 .Fl t
 and
-.Fl v
+.Fl e
 options are mutually exclusive, and at most one of either can be specified.
 Specifying neither is equivalent to specifying
 .Bk -words
@@ -88,8 +88,8 @@ Tell gcc to use header and library files from Macports,
 without clobbering existing values of the environment
 variables used:
 .Bd -literal -offset indent -compact
-C_INCLUDE_PATH="\*(gashowpath -vC_INCLUDE_PATH %current /opt/local/include\*(ga"
-LIBRARY_PATH="\*(gashowpath -vLIBRARY_PATH %current /opt/local/lib\*(ga"
+C_INCLUDE_PATH="\*(gashowpath -eC_INCLUDE_PATH %current /opt/local/include\*(ga"
+LIBRARY_PATH="\*(gashowpath -eLIBRARY_PATH %current /opt/local/lib\*(ga"
 export C_INCLUDE_PATH LIBRARY_PATH
 .Ed
 .Pp
@@ -113,10 +113,6 @@ handle its arguments in a manner compatible with the UW version.
 .An "Dave Vandervies" Aq dj3vande@eskimo.com
 .An "Stephen Paul Weber" Aq singpolyma@singpolyma.net
 .Sh BUGS
-.Fl v
-does not control verbosity; this may confuse users, and
-therefore may be changed at some point in the future.
-.Pp
 Empty entries are discarded by strtok when breaking down the string
 into its constituent parts.
 If you really want an empty path entry, give yourself a whack with

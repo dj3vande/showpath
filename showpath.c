@@ -80,7 +80,7 @@ int set_type(const char *type)
 
 void shortusage(void)
 {
-	printf("Usage: %s [-t type | -v env_name] [-s separator ] path-entry ...\n",myname);
+	printf("Usage: %s [-t type | -e env_name] [-s separator ] path-entry ...\n",myname);
 }
 
 void usage(void)
@@ -104,14 +104,14 @@ int main(int argc,char **argv)
 
 	set_defaults();
 
-	while((opt=getopt(argc,argv,":t:v:s:"))!=-1)
+	while((opt=getopt(argc,argv,":t:e:s:"))!=-1)
 	{
 		switch(opt)
 		{
 		case 't':
 			if(have_type)
 			{
-				fprintf(stderr,"%s: Only one '-t' or '-v' allowed!\n",myname);
+				fprintf(stderr,"%s: Only one '-t' or '-e' allowed!\n",myname);
 				shortusage();
 				return EXIT_FAILURE;
 			}
@@ -123,10 +123,10 @@ int main(int argc,char **argv)
 			}
 			have_type=1;
 			break;
-		case 'v':
+		case 'e':
 			if(have_type)
 			{
-				fprintf(stderr,"%s: Only one '-t' or '-v' allowed!\n",myname);
+				fprintf(stderr,"%s: Only one '-t' or '-e' allowed!\n",myname);
 				shortusage();
 				return EXIT_FAILURE;
 			}
