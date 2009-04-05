@@ -1,5 +1,5 @@
 .Dd April 1, 2009
-.Dt showpath 1 LOCAL
+.Dt SHOWPATH 1 LOCAL
 .Os Generic Unix
 .Sh NAME
 .Nm showpath
@@ -70,7 +70,11 @@ and
 options are mutually exclusive, and at most one of either can be specified.
 Specifying neither is equivalent to specifying
 .Bk -words
-.Fl t Li exec .
+.\" When being processed with troff, this Ql expands to a call to Li, which
+.\" generates a "cancels effect" warning since its first arg is a macro.
+.\" But Ql does its thing on the the '-t exec' as desired (with nroff it
+.\" quotes it), which is why it's there.   --DV
+.Ql Fl t Li exec .
 .Ek
 .Sh FILES
 None yet.
