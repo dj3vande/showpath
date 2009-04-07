@@ -89,20 +89,46 @@ int add_entry(struct path_list *pl,const char *ent)
 {
 	struct path_list *new;
 	int ret;
+	int remove=0;
+
+	if(ent[0]=='^')
+	{
+		remove=1;
+		ent++;
+	}
 
 	if(ent[0]=='%')
 		new=expand_shortname(ent);
 	else if(strchr(ent,config.pathsep))
 		new=split_path(ent,config.pathsep);
 	else	/*simple entry, just add*/
-		return insert_entry(pl,ent);
+	{
+		if(remove)
+		{
+			remove_entry(pl,ent);
+			return 0;
+		}
+		else
+		{
+			return insert_entry(pl,ent);
+		}
+	}
 
 	/*If we get here, we have a list of entries to add in new
 	    (or NULL if we've failed somewhere along the line)
 	*/
 	if(!new)
 		return -1;
-	ret=insert_entries(pl,new);
+
+	if(remove)
+	{
+		remove_entries(pl,new);
+		ret=0;
+	}
+	else
+	{
+		ret=insert_entries(pl,new);
+	}
 	free_entry(new);
 	return ret;
 }
