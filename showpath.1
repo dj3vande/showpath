@@ -1,24 +1,29 @@
 .Dd April 1, 2009
 .Dt SHOWPATH 1 LOCAL
 .Os Generic Unix
+.
 .Sh NAME
 .Nm showpath
 .Nd manageably edit path
+.
 .Sh SYNOPSIS
 .Nm showpath
 .Op Fl t Ar type | Fl e Ar ENV_NAME
 .Op Fl s Ar separator
 .Ar path_entry ...
+.
 .Sh DESCRIPTION
 The showpath tool writes a string suitable for use as a path
 to stdout.
 The string is constructed by combining the path entries given on
 the command line, in order, with duplicates pruned.
+.
 .Pp
 A path_entry containing the path separator is treated as a fragment
 of a path and is broken down into its constituent parts by splitting
 at the separators; these parts will be added (subject to duplicate
 pruning) independently.
+.
 .Pp
 The magic path_entry
 .Ql %current
@@ -27,6 +32,7 @@ environment).
 This expansion happens before splitting at separators, so the current
 path will be broken down into its constituent parts and not inserted
 monolithically.
+.
 .Pp
 A path_entry prefixed with
 .Ql \&^
@@ -38,16 +44,20 @@ Entries that have been removed may be re-added, and will be placed
 at the end of the path.
 (This is exactly the same handling as anything else not in the path
 under construction.)
+.
 .Pp
 The following options are available:
 .Bl -tag -width flag
+.
 .It Fl e Ar ENV_NAME
 Specifies an environment variable name to look up for the expansion of
 .Ql %current .
+.
 .It Fl s Ar separator
 Specifies the path separator.
 The separator must be a single character and defaults to
 .Ql \&: .
+.
 .It Fl t Ar type
 Specifies a pre-configured path type.
 Valid types are currently compiled in; making them configurable (by system
@@ -63,6 +73,7 @@ Currently known types are:
 (for
 .Ev $MANPATH )
 .El
+.
 .Pp
 The
 .Fl t
@@ -72,6 +83,7 @@ option.
 Adding short names for sets of path entries is a feature scheduled
 for implementation in the near future; when this happens, specifying
 a type will also select a set of short names based on the type.
+.
 .El
 .Pp
 The
@@ -87,8 +99,10 @@ Specifying neither is equivalent to specifying
 .\" quotes it), which is why it's there.   --DV
 .Ql Fl t Li exec .
 .Ek
+.
 .Sh FILES
 None yet.
+.
 .Sh EXAMPLES
 Put
 .Pa ~/bin
@@ -98,6 +112,7 @@ or move it to the beginning if it's already in there somewhere:
 .Bd -literal -offset indent -compact
 PATH="\*(gashowpath ~/bin %current\*(ga"
 .Ed
+.
 .Pp
 Put
 .Pa ~/bin
@@ -119,6 +134,7 @@ is required; showpath does not (yet) do
 .Li ~ Ns -expansion ,
 but this is a feature scheduled for implementation in the near
 future.)
+.
 .Pp
 Tell gcc to use header and library files from Macports,
 without clobbering existing values of the environment
@@ -128,6 +144,7 @@ C_INCLUDE_PATH="\*(gashowpath -eC_INCLUDE_PATH %current /opt/local/include\*(ga"
 LIBRARY_PATH="\*(gashowpath -eLIBRARY_PATH %current /opt/local/lib\*(ga"
 export C_INCLUDE_PATH LIBRARY_PATH
 .Ed
+.
 .Pp
 Invoke a setup script that adds entries to
 .Ev $PATH ,
@@ -137,20 +154,25 @@ oldpath="$PATH"
 \&. /path/to/setup/script
 PATH="\*(gashowpath "$oldpath" %current\*(ga"
 .Ed
+.
 .Sh HISTORY
 The MFCF environment at the University of Waterloo has a tool by
 the same name with similar behavior, which simplifies configuring
 paths for the local environment.
+.
 .Pp
 This version does
 .Em not
 handle its arguments in a manner compatible with the UW version.
+.
 .Sh AUTHORS
 .An "Dave Vandervies" Aq dj3vande@eskimo.com
+.
 .Pp
 .An -nosplit
 With contributions from
 .An "Stephen Paul Weber" Aq singpolyma@singpolyma.net
+.
 .Sh BUGS
 Empty entries are discarded by strtok when breaking down the string
 into its constituent parts.
@@ -159,6 +181,7 @@ the cluestick and then say
 .Bk -words
 .Ql PATH="\*(gashowpath %current \&""\*(ga" .
 .Ek
+.
 .Pp
 Send new bug reports to 
 .Aq dj3vande@eskimo.com .
