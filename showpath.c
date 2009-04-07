@@ -21,41 +21,29 @@ static void set_defaults(void)
 	config.pathsep=':';
 }
 
-/*Look up an environment variable and add its contents to the list
-    of path entries in pl.
-*/
-int add_from_env(struct path_list *pl, char* env_var, char sep)
-{
-	const char *p=getenv(env_var);
 
-	if(!p)
-	{
-		/*This isn't an error, it just means we have an empty
-		    expansion for %current.
-		  So silently continue with anything else we want to throw
-		    in.
-		*/
-		return 0;
-	}
-
-	return add_entries(pl,p,sep);
-}
-
-/*Handle magic path entries.
+/*Expand shortnames (path_entries beginning with '%')
   Currently only handles '%current'.
   When we add config file capability, this will be where we look up
     the path entries for shortnames.
 */
-int add_magic_entry(struct path_list *pl,const char *name)
+struct path_list *expand_shortname(const char *name)
 {
+	const char *env_string;
+
 	if(strcmp(name,"%current")!=0)
 	{
 		fprintf(stderr,"%s: Unrecognized magic path entry '%s'\n",myname,name);
-		return -1;
+		return NULL;
 	}
 
-	return add_from_env(pl,config.envname,config.pathsep);
+	env_string=getenv(config.envname);
+	if(env_string)
+		return split_path(env_string,config.pathsep);
+	else
+		return alloc_entry();	/*no path string is not error*/
 }
+
 
 /*Set the type of path we're building.
   Used for -t switch.
@@ -91,6 +79,32 @@ void usage(void)
 	printf("  Known types are 'exec' (for $PATH) and 'man' (for $MANPATH).\n");
 	printf("  The magic path-entry '%%current' expands to the current value from\n");
 	printf("    the environment.\n");
+}
+
+
+/*Add a path entry, handling shortname expansion and path splitting
+    as appropriate
+*/
+int add_entry(struct path_list *pl,const char *ent)
+{
+	struct path_list *new;
+	int ret;
+
+	if(ent[0]=='%')
+		new=expand_shortname(ent);
+	else if(strchr(ent,config.pathsep))
+		new=split_path(ent,config.pathsep);
+	else	/*simple entry, just add*/
+		return insert_entry(pl,ent);
+
+	/*If we get here, we have a list of entries to add in new
+	    (or NULL if we've failed somewhere along the line)
+	*/
+	if(!new)
+		return -1;
+	ret=insert_entries(pl,new);
+	free_entry(new);
+	return ret;
 }
 
 int main(int argc,char **argv)
@@ -177,7 +191,7 @@ int main(int argc,char **argv)
 
 	for(i=0;i<argc;i++)
 	{
-		int ret=add_entries(pl,argv[i],config.pathsep);
+		int ret=add_entry(pl,argv[i]);
 		if(ret)
 		{
 			/*XXX This will get ugly if we have a long path

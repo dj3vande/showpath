@@ -56,12 +56,9 @@ static void grow(struct path_list *pl)
 	pl->entries=t;
 }
 
-int add_entry(struct path_list *pl,const char *new)
+int insert_entry(struct path_list *pl,const char *new)
 {
 	size_t i;
-
-	if(new[0]=='%')
-		return add_magic_entry(pl,new);
 
 	for(i=0;i<pl->num;i++)
 		if(strcmp(pl->entries[i],new)==0)
@@ -79,32 +76,89 @@ int add_entry(struct path_list *pl,const char *new)
 	return 0;
 }
 
-int add_entries(struct path_list *pl,const char *list,char sep)
+int insert_entries(struct path_list *into,const struct path_list *from)
 {
-	char *p=strdup(list);
-	char *q;
+	size_t i;
+	int ret;
+
+	for(i=0;i<from->num;i++)
+		if((ret=insert_entry(into,from->entries[i]))!=0)
+			return ret;
+
+	return 0;
+}
+
+int remove_entry(struct path_list *pl,const char *old)
+{
+	size_t i;
+	
+	for(i=0;i<pl->num;i++)
+	{
+		if(strcmp(pl->entries[i],old)==0)
+		{
+			/*Remove this one*/
+			size_t j;
+
+			free(pl->entries[i]);
+			for(j=i+1;j<pl->num;j++)
+				pl->entries[j-1]=pl->entries[j];
+			pl->num--;
+
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*We could be a bit lazier here by marking removed entries with a dummy
+    string (have to be careful not to collide with real ones) and then
+    doing a single "move up" pass after everything is removed.   --DV
+*/
+int remove_entries(struct path_list *from,const struct path_list *to_remove)
+{
+	size_t i;
+	int ret=0;
+
+	for(i=0;i<to_remove->num;i++)
+		ret+=remove_entry(from,to_remove->entries[i]);
+
+	return ret;
+}
+
+struct path_list *split_path(const char *list,char sep)
+{
+	struct path_list *pl;
+	char *p,*q;
 	char ss[2];
 
 	ss[0]=sep;
 	ss[1]='\0';
 
+	pl=alloc_entry();
+	if(!pl)
+		return NULL;
+
+	p=strdup(list);
 	if(!p)
 	{
 		perror("strdup");
-		return -1;
+		free_entry(pl);
+		return NULL;
 	}
+
 	q=strtok(p,ss);
 	while(q)
 	{
-		int ret=add_entry(pl,q);
-		if(ret)
+		if(insert_entry(pl,q))
 		{
 			free(p);
-			return ret;
+			free_entry(pl);
+			return NULL;
 		}
 		q=strtok(NULL,ss);
 	}
+
 	free(p);
 
-	return 0;
+	return pl;
 }
