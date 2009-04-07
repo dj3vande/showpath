@@ -6,39 +6,7 @@ Documentation:
 Bugfixes:
 	See BUGS section of manpage.
 
-Code cleanup:
--Fix command line path_entry handling so we don't have everything going
-  through add_entries.
- We really want to do one of at least three things, checked at the point
-  of entry (command line or, in the future, config file entries):
-   -Does it start with '%'?  If it does, call add_magic_entry without
-     further massaging.
-   -Does it contain a path separator?  If it does, call add_entries
-   -Otherwise, just call add_entry.
-  (We can remove the "is it magic?" check in add_entry if we do things
-    in this order everywhere.)
-  Perhaps the best way to do this is to split add_entry into add_entry
-    (point-of-entry handling) and insert_entry ("just add this").  (If
-    this is available, it would make more sense for add_entries to call
-    insert_entry than add_entry, and it might be worth renaming it to
-    insert_entries.)
-
 Features:
--Allow deprioritizing an item.
-  showpath ~/bin %current moves it to the front if it's already there
-  showpath %current ~/bin should move it to the end
- Dave's thoughts:
- I've been bouncing around the idea of having a magic prefix to
-  REMOVE an entry.  ('-' is an obvious magic prefix in terms of
-  mapping meaning of symbols to semantics, except that it's already
-  the option prefix, and overloading it would be both confusing and
-  difficult to implement.)
- If the remove is done in-order on the walk through the command
-  line, deprioritizing could then be done by saying
-    showpath %current -~/bin ~/bin
-  (remove ~/bin from current (silently ignore if it's not there),
-  then add it after what's left).
-
 -Add configurable short names
   (e.g. we should be able to create a config file for a Mac
   installation so that 'showpath -tman %fink %current' outputs
