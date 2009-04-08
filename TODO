@@ -29,8 +29,6 @@ Features:
   /sw/man (where fink keeps its manpages) prepended to $MANPATH,
   or moves it to the front if it's already in there somewhere.)
 
--Make '~' prefix on path_entries expand to $HOME
-
 -Add capability to prune directories that do not exist
   (combined with the above to-do items, this will let the
   system config specify something like
