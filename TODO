@@ -6,6 +6,22 @@ Documentation:
 Bugfixes:
 	See BUGS section of manpage.
 
+Code cleanup:
+-Find a better place to put the ~-expansion
+  It's done on the inputs to insert_entry and remove_entry.
+  From a "where does data go" point of view, this is the right place,
+    since we want things to be expanded iff they go through this
+    interface; but that's in code that was supposed to only do
+    bookkeeping for inputs that had already had all the interpretation
+    and rewriting they needed done.
+  If we could get away with doing it at the output, that would be
+    cleanest, but having multiple names for the same entry inside the
+    path maintenance code breaks removal and duplicate pruning.
+  Trying to do it at the front-end runs into problems with not having
+    the outputs of path splitting and shortname expansion go through
+    a single well-defined point we can do expansion at (other than
+    insert_entry and remove_entry, but see above).
+
 Features:
 -Add configurable short names
   (e.g. we should be able to create a config file for a Mac

@@ -56,9 +56,79 @@ static void grow(struct path_list *pl)
 	pl->entries=t;
 }
 
+static void expand_home(char *out,const char *in)
+{
+	char *home=getenv("HOME");
+	size_t len;
+	size_t space;
+	if(!home)
+	{
+		fprintf(stderr,"Warning: Can't expand $HOME\n");
+		out[0]='\0';
+		space=FILENAME_MAX-1;
+		/*Don't return here; we still have to check in for
+		    truncation, and we can arrange things so we only
+		    have to do that in one place.
+		*/
+	}
+	else
+	{
+		len=strlen(home);
+		if(len >= FILENAME_MAX)
+		{
+			fprintf(stderr,"Warning: Truncating in ~-expansion\n");
+			/*This would be easier if we could count on having
+			    strlcpy and strlcat available.
+			*/
+			out[0]=0;
+			strncat(out,in,FILENAME_MAX-1);
+			return;
+		}
+		else
+		{
+			strcpy(out,home);
+			in++;
+			space=FILENAME_MAX-len-1;
+		}
+	}
+
+	len=strlen(in);
+	if(len > space)
+	{
+		fprintf(stderr,"Warning: Truncating in ~-expansion\n");
+		/*This would be easier if we could count on having strlcpy
+		    and strlcat available.
+		*/
+		strncat(out,in,space);
+	}
+	else
+	{
+		/*All good, no truncation or buffer overflow*/
+		strcat(out,in);
+	}
+}
+
 int insert_entry(struct path_list *pl,const char *new)
 {
 	size_t i;
+
+	/*XXX This is a HORRIBLE place to do ~-expansion, but
+	    it seems less bad than any of the other options
+	    (since we want to do ~-expansion on a string iff
+	    it ends up here or in remove_entry at some point)
+	  Expanding at input is kind of hard because of the
+	    different ways input needs to be handled.
+	  Expanding at output looks like it should be easier,
+	    but interferes with duplicate pruning and removal
+	    (since we want the ~-expanded and unexpanded values
+	    to compare equal in that case).
+	*/
+	char expanded_name[FILENAME_MAX];
+	if(new[0]=='~')
+	{
+		expand_home(expanded_name,new);
+		new=expanded_name;
+	}
 
 	for(i=0;i<pl->num;i++)
 		if(strcmp(pl->entries[i],new)==0)
@@ -91,6 +161,24 @@ int insert_entries(struct path_list *into,const struct path_list *from)
 int remove_entry(struct path_list *pl,const char *old)
 {
 	size_t i;
+
+	/*XXX This is a HORRIBLE place to do ~-expansion, but
+	    it seems less bad than any of the other options
+	    (since we want to do ~-expansion on a string iff
+	    it ends up here or in insert_entry at some point)
+	  Expanding at input is kind of hard because of the
+	    different ways input needs to be handled.
+	  Expanding at output looks like it should be easier,
+	    but interferes with duplicate pruning and removal
+	    (since we want the ~-expanded and unexpanded values
+	    to compare equal in that case).
+	*/
+	char expanded_name[FILENAME_MAX];
+	if(old[0]=='~')
+	{
+		expand_home(expanded_name,old);
+		old=expanded_name;
+	}
 	
 	for(i=0;i<pl->num;i++)
 	{
