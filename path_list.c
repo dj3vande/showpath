@@ -80,14 +80,14 @@ static void expand_home(char *out,const char *in)
 			/*This would be easier if we could count on having
 			    strlcpy and strlcat available.
 			*/
-			out[0]=0;
+			out[0]='\0';
 			strncat(out,in,FILENAME_MAX-1);
 			return;
 		}
 		else
 		{
 			strcpy(out,home);
-			in++;
+			in++;	/*eat '~'*/
 			space=FILENAME_MAX-len-1;
 		}
 	}
