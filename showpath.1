@@ -30,11 +30,13 @@ A path_entry beginning with
 is a
 .Em short name ,
 and will be expanded to a set of path entries that are then added
-as if they were named separately on the command line.  The only
-short name currently supported is
+as if they were named separately on the command line.  The short
+names currently supported are
 .Ql %current ,
 which expands to the entries in the current path (taken from the
-environment).
+environment), and
+.Ql %pwd ,
+which expands to the current directory.
 Allowing additional short names to be defined (by system and/or
 user configuration files) is a feature scheduled for implementation
 in the near future.

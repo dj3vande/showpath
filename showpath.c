@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>	/*for getopt*/
+#include <unistd.h>	/*for getopt and getcwd*/
 
 #include "showpath.h"
 
@@ -29,19 +29,41 @@ static void set_defaults(void)
 */
 struct path_list *expand_shortname(const char *name)
 {
-	const char *env_string;
 
-	if(strcmp(name,"%current")!=0)
+	if(strcmp(name,"%current")==0)
+	{
+		const char *env_string=getenv(config.envname);
+		if(env_string)
+			return split_path(env_string,config.pathsep);
+		else
+			return alloc_entry();	/*no path string is not error*/
+	}
+	else if(strcmp(name,"%pwd")==0)
+	{
+		char *pwd;
+		struct path_list *ret;
+
+		pwd=getcwd(NULL,-1);
+		if(!pwd)
+			return NULL;
+		ret=alloc_entry();
+		if(!ret)
+			return NULL;
+
+		if(insert_entry(ret,pwd))
+		{
+			free_entry(ret);
+			ret=NULL;
+		}
+
+		free(pwd);
+		return ret;
+	}
+	else
 	{
 		fprintf(stderr,"%s: Unrecognized magic path entry '%s'\n",myname,name);
 		return NULL;
 	}
-
-	env_string=getenv(config.envname);
-	if(env_string)
-		return split_path(env_string,config.pathsep);
-	else
-		return alloc_entry();	/*no path string is not error*/
 }
 
 
