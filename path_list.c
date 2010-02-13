@@ -76,6 +76,11 @@ static void expand_home(const char *from,char *to,size_t maxlen)
 		len=strlen(home);
 		if(len >= maxlen)
 		{
+			/*$HOME too long.
+			  'Twould be nice to find a way to roll this check
+			    into the "$HOME ok but rest of pre-expansion
+			    entry too long" case.
+			*/
 			fprintf(stderr,"Warning: Truncating in ~-expansion\n");
 			/*This would be easier if we could count on having
 			    strlcpy and strlcat available.
