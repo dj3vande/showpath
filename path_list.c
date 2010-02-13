@@ -56,7 +56,7 @@ static void grow(struct path_list *pl)
 	pl->entries=t;
 }
 
-static void expand_home(char *out,const char *in)
+static void expand_home(const char *from,char *to,size_t maxlen)
 {
 	char *home=getenv("HOME");
 	size_t len;
@@ -64,9 +64,9 @@ static void expand_home(char *out,const char *in)
 	if(!home)
 	{
 		fprintf(stderr,"Warning: Can't expand $HOME\n");
-		out[0]='\0';
-		space=FILENAME_MAX-1;
-		/*Don't return here; we still have to check in for
+		to[0]='\0';
+		space=maxlen-1;
+		/*Don't return here; we still have to check for
 		    truncation, and we can arrange things so we only
 		    have to do that in one place.
 		*/
@@ -74,37 +74,37 @@ static void expand_home(char *out,const char *in)
 	else
 	{
 		len=strlen(home);
-		if(len >= FILENAME_MAX)
+		if(len >= maxlen)
 		{
 			fprintf(stderr,"Warning: Truncating in ~-expansion\n");
 			/*This would be easier if we could count on having
 			    strlcpy and strlcat available.
 			*/
-			out[0]='\0';
-			strncat(out,in,FILENAME_MAX-1);
+			to[0]='\0';
+			strncat(to,from,maxlen-1);
 			return;
 		}
 		else
 		{
-			strcpy(out,home);
-			in++;	/*eat '~'*/
-			space=FILENAME_MAX-len-1;
+			strcpy(to,home);
+			from++;	/*eat '~'*/
+			space=maxlen-len-1;
 		}
 	}
 
-	len=strlen(in);
+	len=strlen(from);
 	if(len > space)
 	{
 		fprintf(stderr,"Warning: Truncating in ~-expansion\n");
 		/*This would be easier if we could count on having strlcpy
 		    and strlcat available.
 		*/
-		strncat(out,in,space);
+		strncat(to,from,space);
 	}
 	else
 	{
 		/*All good, no truncation or buffer overflow*/
-		strcat(out,in);
+		strcat(to,from);
 	}
 }
 
@@ -126,7 +126,7 @@ int insert_entry(struct path_list *pl,const char *new)
 	char expanded_name[FILENAME_MAX];
 	if(new[0]=='~')
 	{
-		expand_home(expanded_name,new);
+		expand_home(new,expanded_name,sizeof expanded_name);
 		new=expanded_name;
 	}
 
@@ -176,7 +176,7 @@ int remove_entry(struct path_list *pl,const char *old)
 	char expanded_name[FILENAME_MAX];
 	if(old[0]=='~')
 	{
-		expand_home(expanded_name,old);
+		expand_home(old,expanded_name,sizeof expanded_name);
 		old=expanded_name;
 	}
 	
