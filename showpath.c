@@ -23,7 +23,8 @@ static void set_defaults(void)
 
 
 /*Expand shortnames (path_entries beginning with '%')
-  Currently only handles '%current'.
+  Currently handles '%current' (existing entry from environment) and
+    '%pwd' (working directory at time of showpath invocation).
   When we add config file capability, this will be where we look up
     the path entries for shortnames.
 */
@@ -61,7 +62,7 @@ struct path_list *expand_shortname(const char *name)
 	}
 	else
 	{
-		fprintf(stderr,"%s: Unrecognized magic path entry '%s'\n",myname,name);
+		fprintf(stderr,"%s: Unrecognized shortname '%s'\n",myname,name);
 		return NULL;
 	}
 }
@@ -99,8 +100,10 @@ void usage(void)
 	printf("  Outputs a path containing all path-entries on the command line, in\n");
 	printf("    the order given, with duplicates removed.\n");
 	printf("  Known types are 'exec' (for $PATH) and 'man' (for $MANPATH).\n");
-	printf("  The magic path-entry '%%current' expands to the current value from\n");
+	printf("  The shortname '%%current' expands to the current value from\n");
 	printf("    the environment.\n");
+	printf("  The shortname '%%pwd' expands to the working directory at the time\n");
+	printf("    of invocation of %s.\n",myname);
 }
 
 
